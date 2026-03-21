@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv
+venv/
+*.log
+.DS_Store
+
+# Keep saved_models structure but not weights (too large for git without LFS)
+# saved_models/bertweet_model/*.safetensors
+# saved_models/bertweet_model/*.bin
+# Uncomment above if using Git LFS, comment out if uploading via HF Hub API
