@@ -251,8 +251,7 @@ def load_models():
     Falls back to Demo Mode if any file is missing.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    base   = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "saved_models")
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_models")
 
     try:
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -261,7 +260,7 @@ def load_models():
         if not os.path.isdir(bwt_path):
             raise FileNotFoundError(f"bertweet_model not found at {bwt_path}")
 
-        tokenizer  = AutoTokenizer.from_pretrained(bwt_path, use_fast=False)
+        tokenizer  = AutoTokenizer.from_pretrained("vinai/bertweet-base", use_fast=False, normalization=True)
         bert_model = AutoModelForSequenceClassification.from_pretrained(bwt_path)
         bert_model.to(device).eval()
 
@@ -668,7 +667,14 @@ def predict(text, models, max_len=128):
             enc["input_ids"].to(models["device"]),
             attention_mask=enc["attention_mask"].to(models["device"])
         )
-        probs = torch.softmax(out.logits, dim=1).cpu().numpy()[0]
+        bert_probs = torch.softmax(out.logits, dim=1).cpu().numpy()[0]
+
+    # Get LightGBM probabilities
+    clean_text = preprocess_text(text)
+    lgbm_probs = models["lgbm"].predict_proba(models["tfidf"].transform([clean_text]))[0]
+
+    # Ensemble both models (average their probabilities)
+    probs = (bert_probs + lgbm_probs) / 2.0
 
     classes = list(models["le"].classes_)
     return probs, classes
